@@ -5,8 +5,16 @@ import getRandomImage from "../utils/getRandomImage";
 import { ethers } from "ethers";
 import connectContract from "../utils/connectContract";
 import { TagsInput } from "react-tag-input-component";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
+import Alert from "../components/Alert";
 
 export default function CreateEvent() {
+  const { data: account } = useAccount();
+  const [success, setSuccess] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(null);
+  const [eventID, setEventID] = useState(null);
   const [memoryName, setMemoryName] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
@@ -22,26 +30,26 @@ export default function CreateEvent() {
     console.log("friends:", friends);
     console.log("show publicly?:", sPublic);
     console.log("event description:", eventDescription);
-    console.log("image:", photo);
+    console.log("image:", photo ? photo.name : photo);
   }, [memoryName, eventDate, friends, sPublic, eventDescription, photo]);
 
   const changeHandler = (event) => {
-		setPhoto(event.target.files[0]);
-	};
+    setPhoto(event.target.files[0]);
+  };
 
   async function handleSubmit(e) {
     console.log("handle submit function called");
     e.preventDefault();
     // const formData = new FormData();
 
-		// formData.append('File', photo);
+    // formData.append('File', photo);
 
     const body = {
       //the stuff that we're sending to web3storage - aka everything off-chain
       name: memoryName,
       description: eventDescription,
       link: eventLink,
-      image: photo
+      image: getRandomImage(), //photo.name
     };
 
     //data that we're storing on-chain with our smart contract:
@@ -88,13 +96,23 @@ export default function CreateEvent() {
           friends,
           { gasLimit: 900000 }
         );
+        setLoading(true);
         console.log("Minting...", txn.hash);
+        await txn.wait();
         console.log("Minted -- ", txn.hash);
+        let wait = await txn.wait();
+        setEventID(wait.events[0].args[0]);
+        setSuccess(true);
+        setLoading(false);
+        setMessage("Your event has been created successfully.");
       } else {
         console.log("Error getting contract.");
       }
     } catch (error) {
       console.log(error);
+      setSuccess(false);
+      setMessage(`There was an error creating your event: ${error.message}`);
+      setLoading(false);
     }
   };
 

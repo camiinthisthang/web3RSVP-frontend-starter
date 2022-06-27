@@ -23,7 +23,6 @@ export default async function handler(req, res) {
       console.log("after makeFileObjects");
       const cid = await storeFiles(files);
       console.log("after storeFiles");
-      console.log(res.status(200).json({ success: true, cid: cid }));
       return res.status(200).json({ success: true, cid: cid });
     } catch (err) {
       return res
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
   async function makeFileObjects(body) {
     const buffer = Buffer.from(JSON.stringify(body));
   
-    const imageDirectory = resolve(process.cwd(), body.image);
+    const imageDirectory = resolve(process.cwd(), `public/images/${body.image}`);
     const files = await getFilesFromPath(imageDirectory);
   
     files.push(new File([buffer], "data.json"));
@@ -49,5 +48,7 @@ export default async function handler(req, res) {
   async function storeFiles(files) {
     const client = makeStorageClient();
     const cid = await client.put(files);
+    console.log("made it to the end of storeFiles, the final function call in this route");
+    console.log("this is the cid", cid);
     return cid;
   }
